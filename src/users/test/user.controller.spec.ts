@@ -32,7 +32,8 @@ describe('UsersController', () => {
   });
 
   describe('create', () => {
-    // Prueba 1
+
+    // Prueba 1 para la creacion y retorno de usuario
     it('Deberia crear un usuario y retorna el usuario', async () => {
       const usuarios: CreateUserCmd = {
         name: 'hernan',
@@ -45,13 +46,10 @@ describe('UsersController', () => {
 
       const usuarioCreado = await controller.create(usuarios);
 
-      console.log('Usuario enviado:', usuarios);
-      console.log('Usuario creado:', usuarioCreado);
-
       expect(usuarioCreado).toEqual(result);
     });
 
-    //prueba manejo de errores
+    //prueba manejo de errores al querer crear un usuario
 
     it('Deberia tirar un error al fallar el servicio', async () => {
       const usuario: CreateUserCmd = {

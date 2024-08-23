@@ -4,7 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
-import { User } from '../entities/user.entity';
+import { User } from '../results/user.result';
 import { CreateUserCmd } from '../cmds/create-user.cmd';
 import { UpdateUserFilter } from '../filters/update-user.filter';
 import { validateOrReject } from 'class-validator';
@@ -15,30 +15,30 @@ export class UsersService {
   private users: User[] = [];
   private nextId = 1;
 
-  // creacion de nuevo usuario, recibe 3 parametros y devuelve un objeto usuario con su id autogenerado
+  // creacion de nuevo usuario, recibe 3 parametros, se validan los campos y que el mail no este registrado, en caso de exito  devuelve un objeto user con su id autogenerado
 
-  async create(createUserCmd: CreateUserCmd): Promise<User> {
+  async create(payload: CreateUserCmd): Promise<User> {
     try {
       // Validar los datos recibidos
-      validateField('name', createUserCmd.name);
-      validateField('email', createUserCmd.email);
+      validateField('name', payload.name);
+      validateField('email', payload.email);
       if (
-        typeof createUserCmd.age !== 'number' ||
-        typeof createUserCmd.name !== 'string' ||
-        typeof createUserCmd.email !== 'string'
+        typeof payload.age !== 'number' ||
+        typeof payload.name !== 'string' ||
+        typeof payload.email !== 'string'
       ) {
         throw new BadRequestException('Datos de entrada inválidos');
       }
-      await validateOrReject(createUserCmd);
-      // Verificar si el email ya está registrado
+      await validateOrReject(payload);
+
       const emailExists = this.users.some(
-        (user) => user.email === createUserCmd.email,
+        (user) => user.email === payload.email,
       );
       if (emailExists) {
         throw new ConflictException('El email ya está registrado');
       }
 
-      const newUser: User = { id: this.nextId++, ...createUserCmd };
+      const newUser: User = { id: this.nextId++, ...payload };
       this.users.push(newUser);
 
       console.log('Usuarios actuales:', this.users);
@@ -57,6 +57,7 @@ export class UsersService {
     }
   }
 
+   // busca todos los usuarios registrados, si lo encuentra y devuelve un array de objetos user , de lo contrario un array vacio
   async findAll(): Promise<User[]> {
     try {
       if (this.users.length === 0) {
@@ -73,6 +74,7 @@ export class UsersService {
     // Retorna el array de usuarios si existen
   }
 
+  // busca por un id pasado por parametro el usuario correspondiente, si lo encuentra y devuelve un objeto user , de lo contrario tira una excepecion
   async findOne(id: number): Promise<User> {
     try {
       // Validar que el id sea un número
@@ -99,11 +101,11 @@ export class UsersService {
       throw new BadRequestException('Error al procesar la solicitud');
     }
   }
-
-  async update(id: number, updateUserFilter: UpdateUserFilter): Promise<User> {
+// actualiza para un id los campos que se pasaron en el payload por defecto se tienen que mandar todos los campos , si lo encuentra actualiza y devuelve un objeto user, sino tira un excepción
+  async update(id: number, payload: UpdateUserFilter): Promise<User> {
     try {
-      validateField('name', updateUserFilter.name);
-      validateField('email', updateUserFilter.email);
+      validateField('name', payload.name);
+      validateField('email', payload.email);
 
       // Validar que el id sea un número
 
@@ -114,7 +116,7 @@ export class UsersService {
       if (userIndex === -1) {
         throw new NotFoundException(`User no encontrado`);
       }
-      const updatedUser = { ...this.users[userIndex], ...updateUserFilter };
+      const updatedUser = { ...this.users[userIndex], ...payload };
       this.users[userIndex] = updatedUser;
       return updatedUser;
     } catch (error) {
@@ -129,6 +131,7 @@ export class UsersService {
     }
   }
 
+  // recibe por parametro un id, realiza las validaciones del campo, en caso de encontrarlo lo elimina de lo contrario tira un mensaje
   async remove(id: number): Promise<void> {
     try {
       if (typeof id !== 'number' || isNaN(id)) {
